@@ -8,6 +8,11 @@ import {
   IconButton,
   Button,
   TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Box,
 } from "@material-ui/core";
 import Pagination from "@material-ui/lab/Pagination";
 import { AddShoppingCart } from "@material-ui/icons";
@@ -22,10 +27,15 @@ import { Rating } from "@material-ui/lab";
 const Products = () => {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
+  const [category, setCategory] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [filterInput, setFilterInput] = useState("");
+  const [isSort, setIsSort] = useState(false);
   const productsPerPage = 4;
+
+  console.log("selectcat", selectedCategory);
 
   const { addToCart } = useContext(CartContext);
 
@@ -34,16 +44,51 @@ const Products = () => {
     toast.success("Product added to cart successfully!");
   };
 
+  const handleSelect = (e) => {
+    setIsSort(e.target.value);
+  };
+
   useEffect(() => {
-    fetch("https://fakestoreapi.com/products")
+    let apiUrl = "";
+    if (isSort) {
+      apiUrl = "https://fakestoreapi.com/products?sort=desc";
+    } else {
+      apiUrl = "https://fakestoreapi.com/products?limit=5";
+    }
+
+    fetch(apiUrl)
       .then((res) => res.json())
       .then((data) => {
         setProducts(data);
         setLoading(false);
       });
-  }, []);
+
+    const fetchCategory = () => {
+      fetch("https://fakestoreapi.com/products/categories")
+        .then((res) => res.json())
+        .then((data) => {
+          setCategory(data);
+          setLoading(false);
+        });
+    };
+
+    fetchCategory();
+  }, [isSort]);
+
+  useEffect(() => {
+    if(selectedCategory !== null){
+      fetch(`https://fakestoreapi.com/products/category/${selectedCategory}`)
+      .then((res) => res.json())
+      .then((json) => setProducts(json));
+    }
+    
+  }, [selectedCategory]);
+
+  console.log("product",products)
 
   const classes = useStyles();
+
+  console.log("categoty", category);
 
   const filterProducts = () => {
     return products.filter((product) => {
@@ -73,6 +118,48 @@ const Products = () => {
     <main className={classes.content}>
       <div className={classes.toolbar} />
 
+      <Box
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          flexDirection: "row",
+        }}
+      >
+        <FormControl>
+          <InputLabel id="demo-simple-select-label" style={{}}>
+            Sort
+          </InputLabel>
+          <Select
+            labelId="demo-simple-select-label"
+            id="demo-simple-select"
+            value={isSort}
+            label="Age"
+            onChange={handleSelect}
+            className={classes.selectTag}
+          >
+            <MenuItem value={false}>select</MenuItem>
+            <MenuItem value={true}>Sort</MenuItem>
+          </Select>
+        </FormControl>
+
+        <FormControl width="200px">
+          <InputLabel id="demo-simple-select-label" style={{}}>
+            Filter By Category
+          </InputLabel>
+          <Select
+            labelId="demo-simple-select-label"
+            id="demo-simple-select"
+            value={selectedCategory}
+            label="Age"
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className={classes.selectTag}
+          >
+            {category?.length > 0 &&
+              category?.map((item) => <MenuItem value={item}>{item}</MenuItem>)}
+          </Select>
+        </FormControl>
+      </Box>
+
       <TextField
         label="Filter products"
         placeholder="Filter By Name, Rating, Category"
@@ -81,6 +168,7 @@ const Products = () => {
         value={filterInput}
         onChange={(e) => setFilterInput(e.target.value)}
         className={classes.filterInput}
+        style={{ marginTop: "20px" }}
       />
 
       {loading ? (
@@ -104,18 +192,19 @@ const Products = () => {
           >
             {currentProducts.map((product) => (
               <Grid key={product.id} item xs={12} sm={6} md={4} lg={3}>
-                <Card
-                  className={classes.card}
-                  
-                >
+                <Card className={classes.card}>
                   <img
-                    style={{ width: "200px", height: "200px",cursor: "pointer" }}
+                    style={{
+                      width: "200px",
+                      height: "200px",
+                      cursor: "pointer",
+                    }}
                     onClick={() => navigate(`/product/${product?.id}`)}
                     className={classes.media}
                     src={product.image}
                     alt={product.title}
                   />
-                  <CardContent  style={{height: "120px"}}>
+                  <CardContent style={{ height: "120px" }}>
                     <div
                       className={classes.cardContent}
                       style={{ height: "100%" }}
@@ -125,10 +214,8 @@ const Products = () => {
                         variant="h6"
                         component="h4"
                         className={classes.productTitle}
-                    onClick={() => navigate(`/product/${product?.id}`)}
-
-                    style={{cursor:"pointer"}}
-                        
+                        onClick={() => navigate(`/product/${product?.id}`)}
+                        style={{ cursor: "pointer" }}
                       >
                         {product.title}
                       </Typography>
@@ -169,7 +256,11 @@ const Products = () => {
                       color="primary"
                       startIcon={<AddShoppingCart />}
                       onClick={() => handleAddToCart(product)}
-                      style={{fontSize:"11px", fontWeight: 600, textTransform: "none" }}
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        textTransform: "none",
+                      }}
                     >
                       Add to Cart
                     </Button>

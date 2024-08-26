@@ -40,6 +40,12 @@ const useStyles = makeStyles((theme) => ({
     WebkitLineClamp: 2,
     WebkitBoxOrient: "vertical",
   },
+  selectTag: {
+    border:"1px solid gray",
+    padding:"11px",
+    borderRadius:"5px",
+    width:"200px"
+  }
 }));
 
 export default useStyles;
